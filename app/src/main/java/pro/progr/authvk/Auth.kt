@@ -60,7 +60,10 @@ class Auth(context: Context) : AuthInterface {
         epochSecond: Long,
         bodyBytes: ByteArray
     ): String {
-        val secretRaw = store.getSessionSecretRaw() ?: error("No sessionSecret")
+        val secretRaw = store.getSessionSecretRaw() ?: run {
+            clearSession()
+            error("No sessionSecret")
+        }
 
         val bodySha = MessageDigest.getInstance("SHA-256").digest(bodyBytes)
         val bh = Base64.encodeToString(
