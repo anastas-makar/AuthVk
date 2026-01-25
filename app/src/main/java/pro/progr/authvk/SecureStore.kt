@@ -21,13 +21,52 @@ class SecureStore(ctx: Context) {
 
     private val aead: Aead by lazy {
         AeadConfig.register() // один раз на процесс
-        val handle = AndroidKeysetManager.Builder()
-            .withSharedPref(app, "tink_keyset", "tink_prefs") // где хранить зашифрованный keyset
-            .withMasterKeyUri("android-keystore://master_key_tink") // мастер-ключ в Android Keystore
-            .withKeyTemplate(KeyTemplates.get("AES256_GCM")) // ключ для AEAD
-            .build()
-            .keysetHandle
-        handle.getPrimitive(Aead::class.java)
+
+        buildAead()
+    }
+
+    private fun buildAead(): Aead {
+        return try {
+            val handle = AndroidKeysetManager.Builder()
+                .withSharedPref(app, "tink_keyset", "tink_prefs") // где хранить зашифрованный keyset
+                .withMasterKeyUri("android-keystore://master_key_tink") // мастер-ключ в Android Keystore
+                .withKeyTemplate(KeyTemplates.get("AES256_GCM")) // ключ для AEAD
+                .build()
+                .keysetHandle
+            handle.getPrimitive(Aead::class.java)
+
+        } catch (t: Throwable) {
+
+            // Хранилище сломано/несовместимо — сбрасываем и пересоздаём
+            wipeTink(app)
+
+            val handle = AndroidKeysetManager.Builder()
+                .withSharedPref(app, "tink_keyset", "tink_prefs") // где хранить зашифрованный keyset
+                .withMasterKeyUri("android-keystore://master_key_tink") // мастер-ключ в Android Keystore
+                .withKeyTemplate(KeyTemplates.get("AES256_GCM")) // ключ для AEAD
+                .build()
+                .keysetHandle
+            handle.getPrimitive(Aead::class.java)
+        }
+    }
+
+    private fun wipeTink(context: Context) {
+        // 1) снести keyset из prefs
+        context.getSharedPreferences("tink_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit() // именно commit, чтобы сразу
+
+        // 2) снести мастер-ключ из Keystore
+        val ks = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (ks.containsAlias("master_key_tink")) {
+            ks.deleteEntry("master_key_tink")
+        }
+
+        // снести SESSION_SECRET
+        prefs.edit()
+            .remove(SESSION_SECRET)
+            .commit()
     }
 
     // --- утилиты base64url ---
