@@ -16,8 +16,19 @@ class Auth(context: Context) : AuthInterface {
     private val rnd = SecureRandom()
     private val store = SecureStore(context.applicationContext)
 
-    private val _authorized = MutableStateFlow(store.getSessionId() != null)
+    private val _authorized = MutableStateFlow(hasValidSession())
     override fun isAuthorized(): StateFlow<Boolean> = _authorized
+
+    private fun hasValidSession(): Boolean {
+        store.getSessionId() ?: return false
+        val secret = store.getSessionSecretRaw()
+        if (secret == null) {
+            // сессия восстановилась криво (бэкап prefs без keystore) — вычищаем
+            store.clearSession()
+            return false
+        }
+        return true
+    }
 
     init { DeviceIdProvider.init(context.applicationContext) }
 
@@ -62,7 +73,7 @@ class Auth(context: Context) : AuthInterface {
     ): String {
         val secretRaw = store.getSessionSecretRaw() ?: run {
             clearSession()
-            error("No sessionSecret")
+            throw java.io.IOException("No sessionSecret (session invalid / restored without keystore)")
         }
 
         val bodySha = MessageDigest.getInstance("SHA-256").digest(bodyBytes)
