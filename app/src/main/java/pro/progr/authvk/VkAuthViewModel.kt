@@ -16,9 +16,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pro.progr.authapi.AuthInterface
+import pro.progr.personalcrypto.PersonalCrypto
 
 class VkAuthViewModel(
     private val auth: AuthInterface,
+    private val personalCrypto: PersonalCrypto,
     private val api: AuthApi
 ) : ViewModel() {
     private val signingIn = MutableStateFlow(false)
@@ -37,9 +39,16 @@ class VkAuthViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AuthUiState.Loading)
 
+    init {
+        normalizeLocalAuthorizationState()
+    }
+
     fun signIn() {
         // на всякий случай чистим локально (старый мусор)
-        if (auth.getSessionId() != null) auth.clearSession()
+        if (auth.getSessionId() != null || personalCrypto.hasKey()) {
+            auth.clearSession()
+            personalCrypto.clearKey()
+        }
 
         errorMsg.value = null
         signingIn.value = true
@@ -50,7 +59,7 @@ class VkAuthViewModel(
                     override fun onAuth(accessToken: AccessToken) {
                         viewModelScope.launch(Dispatchers.IO) {
                             runCatching {
-                                api.signIn(
+                                val body = api.signIn(
                                     AuthVkRequest(
                                         vkAccessToken = accessToken.token,
                                         deviceId = auth.getDeviceId()
@@ -59,12 +68,8 @@ class VkAuthViewModel(
                                     if (!resp.isSuccessful) error("HTTP ${resp.code()} ${resp.message()}")
                                     resp.body() ?: error("Empty body")
                                 }
-                            }.onSuccess { body ->
-                                auth.setSession(
-                                    sessionId = body.sessionId,
-                                    sessionSecret = body.sessionSecret
-                                )
-                                auth.setName(body.name)
+                                saveAuthorization(body)
+                            }.onSuccess {
                                 errorMsg.value = null
                             }.onFailure { e ->
                                 errorMsg.value = e.message ?: "Auth failed"
@@ -96,7 +101,37 @@ class VkAuthViewModel(
             // логируй при желании, но локально чистим в любом случае
         }
         auth.clearSession()
+        personalCrypto.clearKey()
         errorMsg.value = null
+    }
+
+    private fun saveAuthorization(body: AuthVkResponse) {
+        try {
+            // Сначала сохраняем ключ. Авторизованное состояние Auth публикуется
+            // только после успешного сохранения обеих частей.
+            personalCrypto.setKey(
+                keyB64u = body.personalEncryptionKey,
+                version = body.personalEncryptionKeyVersion
+            )
+            auth.setSession(
+                sessionId = body.sessionId,
+                sessionSecret = body.sessionSecret
+            )
+            auth.setName(body.name)
+        } catch (t: Throwable) {
+            auth.clearSession()
+            personalCrypto.clearKey()
+            throw t
+        }
+    }
+
+    private fun normalizeLocalAuthorizationState() {
+        val hasSession = auth.getSessionId() != null
+        val hasPersonalKey = personalCrypto.hasKey()
+        if (hasSession != hasPersonalKey) {
+            auth.clearSession()
+            personalCrypto.clearKey()
+        }
     }
 }
 

@@ -13,26 +13,44 @@ import java.util.concurrent.TimeUnit
 
 object AuthApiProvider {
     fun api(auth: AuthInterface): AuthApi {
-        val http = OkHttpClient.Builder()
+        val keyServiceHttp = OkHttpClient.Builder()
             .connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
-            // порядок важен: сначала подпишем, потом логгинг, потом реакция на 401
-            .addInterceptor(signingInterceptor(auth))
             .apply {
                 if (BuildConfig.DEBUG) {
-                    addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                    // BODY/HEADERS запрещены: ответ содержит ключи и секрет сессии.
+                    addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BASIC))
                 }
             }
-            .addInterceptor(UnauthorizedInterceptor(auth)) // на 401/403 локально вычистит сессию
             .build()
 
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL) // оканчивается на /
-            .client(http)
-            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
+        val authHttp = OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .addInterceptor(signingInterceptor(auth))
+            .addInterceptor(UnauthorizedInterceptor(auth))
             .build()
 
-        return retrofit.create(AuthApi::class.java)
+        val gson = GsonConverterFactory.create(GsonBuilder().create())
+        val keyServiceApi = Retrofit.Builder()
+            .baseUrl(BuildConfig.KEY_SERVICE_BASE_URL)
+            .client(keyServiceHttp)
+            .addConverterFactory(gson)
+            .build()
+            .create(KeyServiceApi::class.java)
+
+        val authSessionApi = Retrofit.Builder()
+            .baseUrl(BuildConfig.AUTH_API_BASE_URL)
+            .client(authHttp)
+            .addConverterFactory(gson)
+            .build()
+            .create(AuthSessionApi::class.java)
+
+        return object : AuthApi {
+            override suspend fun signIn(body: AuthVkRequest) = keyServiceApi.signIn(body)
+            override suspend fun logout() = authSessionApi.logout()
+        }
     }
 }

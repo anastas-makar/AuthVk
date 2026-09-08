@@ -25,6 +25,16 @@ dependencyResolutionManagement {
             }
         }
 
+        maven {
+            url = uri("https://maven.pkg.github.com/anastas-makar/PersonalCrypto")
+            credentials {
+                username = providers.gradleProperty("gpr.user")
+                    .orElse(System.getenv("GITHUB_USERNAME") ?: "").get()
+                password = providers.gradleProperty("gpr.token")
+                    .orElse(System.getenv("GITHUB_TOKEN") ?: "").get()
+            }
+        }
+
         // VK ID репозитории (для зависимостей VK)
         maven(url = "https://artifactory-external.vkpartner.ru/artifactory/vkid-sdk-android/")
         maven(url = "https://artifactory-external.vkpartner.ru/artifactory/maven/")

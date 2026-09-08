@@ -8,6 +8,9 @@ plugins {
 }
 
 val lp = gradleLocalProperties(rootDir, providers)
+val legacyApiBaseUrl = lp.getProperty("API_BASE_URL") ?: "http://localhost/"
+val keyServiceBaseUrl = lp.getProperty("KEY_SERVICE_BASE_URL") ?: legacyApiBaseUrl
+val authApiBaseUrl = lp.getProperty("AUTH_API_BASE_URL") ?: legacyApiBaseUrl
 
 android {
     namespace = "pro.progr.authvk"
@@ -18,8 +21,8 @@ android {
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // если библиотеке реально нужен этот URL во время выполнения:
-        buildConfigField("String", "API_BASE_URL", "\"${lp.getProperty("API_BASE_URL")}\"")
+        buildConfigField("String", "KEY_SERVICE_BASE_URL", "\"$keyServiceBaseUrl\"")
+        buildConfigField("String", "AUTH_API_BASE_URL", "\"$authApiBaseUrl\"")
     }
 
     // AAR не подписывается — signingConfigs не нужен
@@ -82,6 +85,7 @@ dependencies {
 
     // твоя общая библиотека с интерфейсом/интерсепторами
     implementation("pro.progr:auth-api:0.0.3-alpha")
+    api("pro.progr:personal-crypto:0.0.1-alpha")
 
     // VK ID SDK
     implementation("com.vk.id:vkid:2.5.1")
@@ -96,7 +100,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "pro.progr"
             artifactId = "auth-vk"
-            version = "1.0.4-alpha"
+            version = "1.1.0-alpha"
 
             // ВАЖНО: берём AAR и sourcesJar из компонента release,
             // а не руками по пути в build/outputs

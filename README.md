@@ -1,0 +1,58 @@
+# AuthVk
+
+Авторизация через VK ID с обменом токена в отдельной ключнице. Ключница возвращает:
+
+```json
+{
+  "sessionId": "s....",
+  "sessionSecret": "...",
+  "personalEncryptionKey": "...",
+  "personalEncryptionKeyVersion": 1,
+  "name": "Анна"
+}
+```
+
+`AuthVk` передаёт персональный ключ в `PersonalCrypto`, не публикуя его через
+`AuthInterface`. Сессия считается успешно сохранённой только после сохранения
+ключа. При частичном сбое и при logout обе локальные части очищаются.
+
+## Настройка адресов
+
+В `local.properties` основного проекта задаются два адреса, обязательно с `/`
+в конце:
+
+```properties
+KEY_SERVICE_BASE_URL=https://keys.example.com/
+AUTH_API_BASE_URL=https://auth.example.com/
+```
+
+Для совместимости во время перехода обе настройки используют старый
+`API_BASE_URL`, если отдельное значение отсутствует.
+
+Запрос входа уходит в ключницу, а подписанный logout — непосредственно в Auth.
+Тело и заголовки ответа ключницы не записываются в HTTP-лог.
+
+## Создание ViewModel
+
+```kotlin
+val vm: VkAuthViewModel = viewModel(
+    factory = VkAuthViewModelFactory(
+        auth = app.auth,
+        personalCrypto = app.personalCrypto,
+        api = app.authApi
+    )
+)
+```
+
+`app.personalCrypto` создаётся в composition root приложения:
+
+```kotlin
+val personalCrypto: PersonalCrypto = AndroidPersonalCrypto(applicationContext)
+```
+
+Сначала нужно опубликовать `pro.progr:personal-crypto:0.0.1-alpha`, затем
+собирать и публиковать `pro.progr:auth-vk:1.1.0-alpha`.
+
+Правила резервного копирования окончательно задаёт основное приложение. Оно
+должно исключить `auth.prefs.xml`, `tink_prefs.xml`,
+`personal_crypto.prefs.xml` и `personal_crypto_tink_prefs.xml`.
