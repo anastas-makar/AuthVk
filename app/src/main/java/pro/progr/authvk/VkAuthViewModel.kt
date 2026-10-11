@@ -1,5 +1,6 @@
 package pro.progr.authvk
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vk.id.AccessToken
@@ -19,10 +20,12 @@ import pro.progr.authapi.AuthInterface
 import pro.progr.personalcrypto.PersonalCrypto
 
 class VkAuthViewModel(
+    context: Context,
     private val auth: AuthInterface,
     private val personalCrypto: PersonalCrypto,
     private val api: AuthApi
 ) : ViewModel() {
+    private val appContext = context.applicationContext
     private val signingIn = MutableStateFlow(false)
     private val errorMsg  = MutableStateFlow<String?>(null)
 
@@ -72,7 +75,7 @@ class VkAuthViewModel(
                             }.onSuccess {
                                 errorMsg.value = null
                             }.onFailure { e ->
-                                errorMsg.value = e.message ?: "Auth failed"
+                                errorMsg.value = e.message ?: appContext.getString(R.string.auth_failed)
                             }.also {
                                 signingIn.value = false
                             }
@@ -80,7 +83,7 @@ class VkAuthViewModel(
                     }
                     override fun onFail(fail: VKIDAuthFail) {
                         errorMsg.value = when (fail) {
-                            is VKIDAuthFail.Canceled -> "Отменено"
+                            is VKIDAuthFail.Canceled -> appContext.getString(R.string.auth_cancelled)
                             else -> fail.description
                         }
                         signingIn.value = false

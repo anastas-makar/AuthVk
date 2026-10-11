@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Авторизация VK</string>
+    <string name="vk_login">Войти через VK ID</string>
+    <string name="friend">друг</string>
+    <string name="welcome_user">Здравствуйте, %1$s</string>
+    <string name="logout">Выйти</string>
+    <string name="auth_failed">Ошибка авторизации</string>
+    <string name="auth_cancelled">Вход отменён</string>
+</resources>

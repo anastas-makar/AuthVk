@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun VkWelcomeRow(
@@ -27,7 +28,7 @@ fun VkWelcomeRow(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val display = name?.trim().takeUnless { it.isNullOrEmpty() } ?: "друг"
+    val display = name?.trim().takeUnless { it.isNullOrEmpty() } ?: stringResource(R.string.friend)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -41,7 +42,7 @@ fun VkWelcomeRow(
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "Здравствуйте, $display",
+            text = stringResource(R.string.welcome_user, display),
             style = MaterialTheme.typography.body2,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -49,7 +50,7 @@ fun VkWelcomeRow(
         Spacer(Modifier.weight(1f))
         TextButton(onClick = onLogout) {
             Icon(Icons.AutoMirrored.Outlined.Logout,
-                contentDescription = "Выйти",
+                contentDescription = stringResource(R.string.logout),
                 modifier = Modifier.wrapContentSize(),
                 tint = Color.DarkGray)
         }

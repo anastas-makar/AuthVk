@@ -37,6 +37,7 @@ AUTH_API_BASE_URL=https://auth.example.com/
 ```kotlin
 val vm: VkAuthViewModel = viewModel(
     factory = VkAuthViewModelFactory(
+        context = app.applicationContext,
         auth = app.auth,
         personalCrypto = app.personalCrypto,
         api = app.authApi

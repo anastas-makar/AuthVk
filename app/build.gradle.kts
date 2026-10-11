@@ -100,7 +100,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "pro.progr"
             artifactId = "auth-vk"
-            version = "1.1.0-alpha"
+            version = "1.1.1-alpha"
 
             // ВАЖНО: берём AAR и sourcesJar из компонента release,
             // а не руками по пути в build/outputs

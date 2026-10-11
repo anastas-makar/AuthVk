@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">Auth Vk</string>
+    <string name="app_name">VK Authentication</string>
+    <string name="vk_login">Sign in with VK ID</string>
+    <string name="friend">friend</string>
+    <string name="welcome_user">Hello, %1$s</string>
+    <string name="logout">Log out</string>
+    <string name="auth_failed">Authentication failed</string>
+    <string name="auth_cancelled">Sign-in canceled</string>
 </resources>

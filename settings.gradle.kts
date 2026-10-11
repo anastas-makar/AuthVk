@@ -3,8 +3,7 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven(url = "https://artifactory-external.vkpartner.ru/artifactory/vkid-sdk-android/")
-        maven(url = "https://artifactory-external.vkpartner.ru/artifactory/maven/")
+        maven(url = "https://nexus-external.vkteam.ru/repository/maven/")
     }
 }
 
@@ -36,11 +35,10 @@ dependencyResolutionManagement {
         }
 
         // VK ID репозитории (для зависимостей VK)
-        maven(url = "https://artifactory-external.vkpartner.ru/artifactory/vkid-sdk-android/")
-        maven(url = "https://artifactory-external.vkpartner.ru/artifactory/maven/")
-        maven(url = "https://artifactory-external.vkpartner.ru/artifactory/vk-id-captcha/android/")
+        maven(url = "https://nexus-external.vkteam.ru/repository/maven/")
     }
 }
 
 rootProject.name = "Auth Vk"
 include(":app")
+
