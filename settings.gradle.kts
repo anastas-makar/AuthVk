@@ -34,6 +34,16 @@ dependencyResolutionManagement {
             }
         }
 
+        maven {
+            url = uri("https://maven.pkg.github.com/anastas-makar/Diagnostics")
+            credentials {
+                username = providers.gradleProperty("gpr.user")
+                    .orElse(System.getenv("GITHUB_USERNAME") ?: "").get()
+                password = providers.gradleProperty("gpr.token")
+                    .orElse(System.getenv("GITHUB_TOKEN") ?: "").get()
+            }
+        }
+
         // VK ID репозитории (для зависимостей VK)
         maven(url = "https://nexus-external.vkteam.ru/repository/maven/")
     }

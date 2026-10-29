@@ -85,6 +85,7 @@ dependencies {
 
     // твоя общая библиотека с интерфейсом/интерсепторами
     implementation("pro.progr:auth-api:0.0.3-alpha")
+    api("pro.progr:diagnostics:0.1.0-alpha")
     api("pro.progr:personal-crypto:0.0.1-alpha")
 
     // VK ID SDK
@@ -100,7 +101,7 @@ publishing {
         create<MavenPublication>("release") {
             groupId = "pro.progr"
             artifactId = "auth-vk"
-            version = "1.1.1-alpha"
+            version = "1.1.2-alpha"
 
             // ВАЖНО: берём AAR и sourcesJar из компонента release,
             // а не руками по пути в build/outputs

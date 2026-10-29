@@ -7,6 +7,8 @@ import com.google.crypto.tink.Aead
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.google.crypto.tink.KeyTemplates
+import pro.progr.diagnostics.Diagnostics
+import pro.progr.diagnostics.NoOpDiagnostics
 
 private const val SESSION_ID = "sid"
 
@@ -14,7 +16,10 @@ private const val SESSION_SECRET = "sec_enc"
 
 private const val USER_NAME = "name"
 
-class SecureStore(ctx: Context) {
+class SecureStore @JvmOverloads constructor(
+    ctx: Context,
+    private val diagnostics: Diagnostics = NoOpDiagnostics
+) {
     private val app = ctx.applicationContext
     private val prefs: SharedPreferences =
         app.getSharedPreferences("auth.prefs", Context.MODE_PRIVATE)
@@ -38,6 +43,8 @@ class SecureStore(ctx: Context) {
         } catch (t: Throwable) {
 
             // Хранилище сломано/несовместимо — сбрасываем и пересоздаём
+            diagnostics.breadcrumb("auth: keystore_recovery_started")
+            diagnostics.reportNonFatal(t, issueKey = "auth_keystore_recovery")
             wipeTink(app)
 
             val handle = AndroidKeysetManager.Builder()
@@ -107,7 +114,8 @@ class SecureStore(ctx: Context) {
         val enc = prefs.getString(SESSION_SECRET, null) ?: return null
         return try {
             aead.decrypt(b64uDec(enc), /*AD=*/"v1".toByteArray())
-        } catch (_: Throwable) {
+        } catch (t: Throwable) {
+            diagnostics.breadcrumb("auth: session_secret_decryption_failed")
             null // ключ потерян (wipe KS/переустановка ОС) — трезво обрабатывай как logout
         }
     }

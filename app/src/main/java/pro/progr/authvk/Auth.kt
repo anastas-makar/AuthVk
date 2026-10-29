@@ -9,12 +9,17 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import android.util.Base64
 import pro.progr.authapi.AuthInterface
+import pro.progr.diagnostics.Diagnostics
+import pro.progr.diagnostics.NoOpDiagnostics
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
-class Auth(context: Context) : AuthInterface {
+class Auth @JvmOverloads constructor(
+    context: Context,
+    private val diagnostics: Diagnostics = NoOpDiagnostics
+) : AuthInterface {
     private val rnd = SecureRandom()
-    private val store = SecureStore(context.applicationContext)
+    private val store = SecureStore(context.applicationContext, diagnostics)
 
     private val _authorized = MutableStateFlow(hasValidSession())
     override fun isAuthorized(): StateFlow<Boolean> = _authorized
@@ -24,6 +29,11 @@ class Auth(context: Context) : AuthInterface {
         val secret = store.getSessionSecretRaw()
         if (secret == null) {
             // сессия восстановилась криво (бэкап prefs без keystore) — вычищаем
+            diagnostics.breadcrumb("auth: saved_session_secret_missing")
+            diagnostics.reportNonFatal(
+                IllegalStateException("auth_session_secret_missing"),
+                issueKey = "auth_session_secret_missing"
+            )
             store.clearSession()
             return false
         }
@@ -72,6 +82,11 @@ class Auth(context: Context) : AuthInterface {
         bodyBytes: ByteArray
     ): String {
         val secretRaw = store.getSessionSecretRaw() ?: run {
+            diagnostics.breadcrumb("auth: session_secret_unavailable_for_signing")
+            diagnostics.reportNonFatal(
+                IllegalStateException("auth_session_secret_unavailable"),
+                issueKey = "auth_session_secret_unavailable"
+            )
             clearSession()
             throw java.io.IOException("No sessionSecret (session invalid / restored without keystore)")
         }

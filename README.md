@@ -40,7 +40,8 @@ val vm: VkAuthViewModel = viewModel(
         context = app.applicationContext,
         auth = app.auth,
         personalCrypto = app.personalCrypto,
-        api = app.authApi
+        api = app.authApi,
+        diagnostics = app.diagnostics
     )
 )
 ```
@@ -51,8 +52,18 @@ val vm: VkAuthViewModel = viewModel(
 val personalCrypto: PersonalCrypto = AndroidPersonalCrypto(applicationContext)
 ```
 
-Сначала нужно опубликовать `pro.progr:personal-crypto:0.0.1-alpha`, затем
-собирать и публиковать `pro.progr:auth-vk:1.1.0-alpha`.
+Сначала нужно опубликовать `pro.progr:personal-crypto:0.0.1-alpha` и
+`pro.progr:diagnostics:0.1.0-alpha`, затем собирать и публиковать
+`pro.progr:auth-vk:1.1.2-alpha`.
+
+`Diagnostics` передаётся снаружи, чтобы приложение само выбирало приёмник
+диагностики. AuthVk добавляет безопасные breadcrumbs по этапам авторизации,
+сообщает о неожиданных ошибках входа, проблемах с Keystore и восстановлении
+зашифрованного секрета. Токены, ключи, идентификаторы пользователя и содержимое
+ответов в события не записываются. Отмена входа и сетевые ошибки при logout не
+отправляются как non-fatal. Ошибки сети во время явно запрошенного пользователем
+входа отправляются как non-fatal, чтобы их можно было увидеть без ожидания
+следующего сбоя.
 
 Правила резервного копирования окончательно задаёт основное приложение. Оно
 должно исключить `auth.prefs.xml`, `tink_prefs.xml`,
